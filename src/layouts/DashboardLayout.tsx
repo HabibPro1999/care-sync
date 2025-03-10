@@ -19,6 +19,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) =>
 
   return (
     <div className="flex h-screen bg-background text-foreground">
+      {/* Mobile sidebar */}
+      <div className={cn(
+        "fixed inset-0 bg-background/80 backdrop-blur-sm z-30",
+        sidebarCollapsed ? "hidden" : "md:hidden"
+      )} onClick={toggleSidebar} />
+      
       <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       
       <div 

@@ -6,7 +6,7 @@ import { AppSettings, SettingsContextType, Theme, Language, Direction } from "@/
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 // Get system theme preference
-const getSystemTheme = (): Theme => {
+const getSystemTheme = (): "light" | "dark" => {
   if (typeof window !== "undefined" && window.matchMedia) {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
@@ -26,7 +26,7 @@ const getDirectionFromLanguage = (language: Language): Direction => {
 // Default settings
 const defaultSettings: AppSettings = {
   theme: "system",
-  language: "en",
+  language: "fr",
   direction: "ltr"
 };
 

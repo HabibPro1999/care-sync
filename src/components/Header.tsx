@@ -2,7 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
-import { Moon, Sun, Menu, Bell, ChevronDown } from 'lucide-react';
+import { Moon, Sun, Menu, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,7 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
@@ -28,8 +27,8 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, title }) => {
     updateSettings({ theme: isLight ? 'dark' : 'light' });
   };
 
-  const changeLanguage = (language: 'en' | 'fr' | 'ar') => {
-    updateSettings({ language });
+  const changeLanguage = () => {
+    updateSettings({ language: 'fr' });
   };
 
   const getInitials = (name: string) => {
@@ -47,7 +46,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, title }) => {
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="md:hidden"
           onClick={toggleSidebar}
         >
           <Menu className="h-5 w-5" />
@@ -56,32 +55,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, title }) => {
       </div>
 
       <div className="flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center">
-                2
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <div className="px-4 py-3 border-b border-border">
-              <h3 className="font-medium">Notifications</h3>
-            </div>
-            <div className="px-4 py-3 text-sm">
-              <div className="mb-3 last:mb-0">
-                <div className="font-medium">New appointment request</div>
-                <div className="text-muted-foreground">John Doe - 2 hours ago</div>
-              </div>
-              <div className="mb-3 last:mb-0">
-                <div className="font-medium">Prescription reminder</div>
-                <div className="text-muted-foreground">Sarah Smith - 5 hours ago</div>
-              </div>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         <Button variant="ghost" size="icon" onClick={toggleTheme}>
           {isLight ? (
             <Moon className="h-5 w-5 transition-all" />
@@ -118,48 +91,23 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, title }) => {
               <div className="text-xs text-muted-foreground">{user?.role}</div>
             </div>
             <div className="px-2 py-1.5 border-b border-border">
-              <div className="text-sm px-2 py-1.5 font-medium">Language</div>
+              <div className="text-sm px-2 py-1.5 font-medium">Langue</div>
               <div className="flex items-center gap-1 mt-1">
                 <Button
-                  variant="outline"
+                  variant={settings.language === "fr" ? "default" : "outline"}
                   size="sm"
-                  className={cn(
-                    "flex-1",
-                    settings.language === "en" && "bg-primary text-primary-foreground hover:bg-primary/90"
-                  )}
-                  onClick={() => changeLanguage("en")}
-                >
-                  EN
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "flex-1",
-                    settings.language === "fr" && "bg-primary text-primary-foreground hover:bg-primary/90"
-                  )}
-                  onClick={() => changeLanguage("fr")}
+                  className="flex-1"
+                  onClick={changeLanguage}
                 >
                   FR
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "flex-1",
-                    settings.language === "ar" && "bg-primary text-primary-foreground hover:bg-primary/90"
-                  )}
-                  onClick={() => changeLanguage("ar")}
-                >
-                  AR
                 </Button>
               </div>
             </div>
             <DropdownMenuItem className="cursor-pointer" asChild>
-              <a href="/settings">Settings</a>
+              <a href="/settings">Paramètres</a>
             </DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer" asChild>
-              <a href="/logout">Logout</a>
+              <a href="/logout">Déconnexion</a>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
