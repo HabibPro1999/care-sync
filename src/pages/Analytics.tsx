@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -146,10 +145,8 @@ const Analytics = () => {
   });
   
   // Handle month change
-  const handleMonthChange = (date: Date | undefined) => {
-    if (date) {
-      setSelectedMonth(date);
-    }
+  const handleMonthChange = (date: Date) => {
+    setSelectedMonth(date);
   };
   
   return (
@@ -166,7 +163,7 @@ const Analytics = () => {
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
             <Calendar
-              mode="month"
+              mode="single"
               selected={selectedMonth}
               onSelect={handleMonthChange}
               locale={fr}
