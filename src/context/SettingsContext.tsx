@@ -20,7 +20,7 @@ const getEffectiveTheme = (theme: Theme): "light" | "dark" => {
 
 // Get direction based on language
 const getDirectionFromLanguage = (language: Language): Direction => {
-  return language === "ar" ? "rtl" : "ltr";
+  return "ltr"; // Only French is supported now (LTR)
 };
 
 // Default settings

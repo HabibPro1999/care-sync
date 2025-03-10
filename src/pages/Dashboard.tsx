@@ -4,8 +4,9 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { CalendarIcon, Users, Clock, CheckCircle, Activity, Plus } from 'lucide-react';
+import { CalendarIcon, Users, Clock, CheckCircle, Activity } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -37,14 +38,14 @@ const Dashboard = () => {
     let newGreeting = '';
     
     if (hour < 12) {
-      newGreeting = 'Good morning';
+      newGreeting = 'Bonjour';
     } else if (hour < 18) {
-      newGreeting = 'Good afternoon';
+      newGreeting = 'Bon après-midi';
     } else {
-      newGreeting = 'Good evening';
+      newGreeting = 'Bonsoir';
     }
     
-    setGreeting(`${newGreeting}, ${user?.displayName.split(' ')[0] || 'Doctor'}`);
+    setGreeting(`${newGreeting}, ${user?.displayName.split(' ')[0] || 'Docteur'}`);
   }, [user]);
 
   // In a real app, you would fetch this data from your backend
@@ -56,20 +57,14 @@ const Dashboard = () => {
   // }, []);
 
   return (
-    <DashboardLayout title="Dashboard">
+    <DashboardLayout title="Tableau de bord">
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-semibold">{greeting}</h1>
             <p className="text-muted-foreground mt-1">
-              Here's what's happening in your clinic today, {formatDate(new Date(), 'EEEE, MMMM do')}
+              Voici ce qui se passe dans votre cabinet aujourd'hui, {formatDate(new Date(), 'EEEE, MMMM do')}
             </p>
-          </div>
-          <div className="flex gap-3">
-            <Button className="shadow-md">
-              <Plus className="mr-2 h-4 w-4" />
-              New Appointment
-            </Button>
           </div>
         </div>
       </div>
@@ -83,7 +78,7 @@ const Dashboard = () => {
                 <Users className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Patients</p>
+                <p className="text-sm text-muted-foreground">Patients</p>
                 <h3 className="text-2xl font-semibold">{stats.patients}</h3>
               </div>
             </div>
@@ -97,7 +92,7 @@ const Dashboard = () => {
                 <Clock className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Today's Appointments</p>
+                <p className="text-sm text-muted-foreground">Rendez-vous aujourd'hui</p>
                 <h3 className="text-2xl font-semibold">{stats.appointments.today}</h3>
               </div>
             </div>
@@ -111,7 +106,7 @@ const Dashboard = () => {
                 <CalendarIcon className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Tomorrow's Schedule</p>
+                <p className="text-sm text-muted-foreground">Programme de demain</p>
                 <h3 className="text-2xl font-semibold">{stats.appointments.tomorrow}</h3>
               </div>
             </div>
@@ -125,7 +120,7 @@ const Dashboard = () => {
                 <CheckCircle className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Completed Today</p>
+                <p className="text-sm text-muted-foreground">Terminés aujourd'hui</p>
                 <h3 className="text-2xl font-semibold">{stats.appointments.completed}</h3>
               </div>
             </div>
@@ -138,41 +133,47 @@ const Dashboard = () => {
         <div className="col-span-2">
           <Card className="glassmorphism h-full">
             <CardHeader>
-              <CardTitle>Today's Appointments</CardTitle>
+              <CardTitle>Rendez-vous d'aujourd'hui</CardTitle>
               <CardDescription>
-                You have {stats.appointments.today} appointments scheduled for today
+                Vous avez {stats.appointments.today} rendez-vous programmés pour aujourd'hui
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {stats.todaysAppointments.map((appointment) => (
-                  <div 
+                  <Link 
                     key={appointment.id} 
-                    className="flex items-center justify-between p-4 rounded-lg bg-secondary"
+                    to={`/appointments/${appointment.id}`}
+                    className="block"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        {appointment.patientName.charAt(0)}
+                    <div 
+                      className="flex items-center justify-between p-4 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors duration-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          {appointment.patientName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{appointment.patientName}</p>
+                          <p className="text-sm text-muted-foreground">{appointment.time}</p>
+                        </div>
                       </div>
                       <div>
-                        <p className="font-medium">{appointment.patientName}</p>
-                        <p className="text-sm text-muted-foreground">{appointment.time}</p>
+                        <span 
+                          className={`px-3 py-1 text-xs rounded-full ${
+                            appointment.status === 'Confirmed' 
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' 
+                              : appointment.status === 'Done' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                          }`}
+                        >
+                          {appointment.status === 'Confirmed' ? 'Confirmé' : 
+                           appointment.status === 'Done' ? 'Terminé' : 'Annulé'}
+                        </span>
                       </div>
                     </div>
-                    <div>
-                      <span 
-                        className={`px-3 py-1 text-xs rounded-full ${
-                          appointment.status === 'Confirmed' 
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' 
-                            : appointment.status === 'Done' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                        }`}
-                      >
-                        {appointment.status}
-                      </span>
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>
@@ -182,31 +183,34 @@ const Dashboard = () => {
         <div>
           <Card className="glassmorphism h-full">
             <CardHeader>
-              <CardTitle>Recent Patients</CardTitle>
+              <CardTitle>Patients récents</CardTitle>
               <CardDescription>
-                Latest patients that visited your clinic
+                Derniers patients qui ont visité votre cabinet
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {stats.recentPatients.map((patient) => (
-                  <div 
-                    key={patient.id} 
-                    className="flex items-center justify-between p-4 rounded-lg bg-secondary"
+                  <Link
+                    key={patient.id}
+                    to={`/patients/${patient.id}`}
+                    className="block"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        {patient.name.charAt(0)}
+                    <div className="flex items-center justify-between p-4 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors duration-200">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          {patient.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{patient.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Dernière visite: {formatDate(new Date(patient.lastVisit), 'dd MMM yyyy')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{patient.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Last visit: {formatDate(new Date(patient.lastVisit), 'dd MMM yyyy')}
-                        </p>
-                      </div>
+                      <Button variant="secondary" size="sm">Voir</Button>
                     </div>
-                    <Button variant="secondary" size="sm">View</Button>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>

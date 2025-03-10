@@ -4,9 +4,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types';
-import { CalendarIcon, Users, Clock, BarChart, Settings, LogOut, ClipboardList } from 'lucide-react';
+import { CalendarIcon, Users, Clock, BarChart, Settings, LogOut, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useMobile } from '@/hooks/use-mobile';
 
 type SidebarLink = {
   href: string;
@@ -19,7 +20,7 @@ type SidebarLink = {
 const links: SidebarLink[] = [
   {
     href: '/dashboard',
-    label: 'Dashboard',
+    label: 'Tableau de bord',
     icon: ClipboardList,
     roles: ['MainDoctor', 'Doctor', 'Assistant'],
   },
@@ -31,25 +32,25 @@ const links: SidebarLink[] = [
   },
   {
     href: '/appointments',
-    label: 'Appointments',
+    label: 'Rendez-vous',
     icon: Clock,
     roles: ['MainDoctor', 'Doctor', 'Assistant'],
   },
   {
     href: '/calendar',
-    label: 'Calendar',
+    label: 'Calendrier',
     icon: CalendarIcon,
     roles: ['MainDoctor', 'Doctor', 'Assistant'],
   },
   {
     href: '/analytics',
-    label: 'Analytics',
+    label: 'Analytique',
     icon: BarChart,
     roles: ['MainDoctor', 'Doctor'],
   },
   {
     href: '/settings',
-    label: 'Settings',
+    label: 'Paramètres',
     icon: Settings,
     roles: ['MainDoctor', 'Doctor', 'Assistant'],
   },
@@ -63,6 +64,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const isMobile = useMobile();
   
   // Filter links based on user role
   const filteredLinks = links.filter((link) => 
@@ -74,7 +76,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       className={cn(
         "h-screen fixed top-0 left-0 z-40 transition-all duration-300 ease-in-out",
         "bg-sidebar border-r border-sidebar-border flex flex-col",
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-16" : "w-64",
+        isMobile && collapsed && "-translate-x-full",
+        isMobile && !collapsed && "translate-x-0 shadow-xl"
       )}
     >
       <div className="py-6 px-4 border-b border-sidebar-border flex items-center justify-center">
@@ -91,6 +95,19 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           </div>
         )}
       </div>
+      
+      {/* Sidebar toggle button */}
+      <Button 
+        onClick={onToggle}
+        variant="ghost" 
+        size="icon" 
+        className="absolute right-0 top-6 transform translate-x-1/2 rounded-full bg-sidebar-accent text-sidebar-accent-foreground shadow-md md:flex hidden"
+      >
+        {collapsed ? 
+          <ChevronRight className="h-4 w-4" /> : 
+          <ChevronLeft className="h-4 w-4" />
+        }
+      </Button>
 
       <div className="flex-1 py-6 overflow-y-auto hide-scrollbar">
         <nav className="px-2 space-y-1">
@@ -143,12 +160,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                 onClick={logout}
               >
                 <LogOut className={cn("flex-shrink-0", collapsed ? "mx-auto" : "mr-3")} size={18} />
-                {!collapsed && <span>Logout</span>}
+                {!collapsed && <span>Déconnexion</span>}
               </Button>
             </TooltipTrigger>
             {collapsed && (
               <TooltipContent side="right">
-                Logout
+                Déconnexion
               </TooltipContent>
             )}
           </Tooltip>

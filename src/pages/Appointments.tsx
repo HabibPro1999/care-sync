@@ -1,248 +1,214 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Plus, Calendar, List, Search, Filter } from 'lucide-react';
-import { Appointment } from '@/types';
+import { Link } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import { useAuth } from '@/context/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import AppointmentCard from '@/components/AppointmentCard';
-import { useAuth } from '@/context/AuthContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link } from 'react-router-dom';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { AppointmentStatus } from '@/types';
-
-// Mock function to fetch appointments
-const fetchAppointments = async (): Promise<Appointment[]> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
-  // Return mock data
-  return [
-    {
-      id: "a1",
-      patientId: "p1",
-      assignedDoctorId: "d1",
-      dateTime: "2023-11-15T10:00:00Z",
-      status: "Done",
-      patientName: "Emma Martin",
-      doctorName: "Dr. Robert"
-    },
-    {
-      id: "a2",
-      patientId: "p2",
-      assignedDoctorId: "d2",
-      dateTime: "2024-03-20T15:30:00Z",
-      status: "Confirmed",
-      patientName: "Lucas Bernard",
-      doctorName: "Dr. Sophie"
-    },
-    {
-      id: "a3",
-      patientId: "p3",
-      assignedDoctorId: "d1",
-      dateTime: "2024-03-22T09:15:00Z",
-      status: "Pending",
-      patientName: "Léa Dubois",
-      doctorName: "Dr. Robert"
-    },
-    {
-      id: "a4",
-      patientId: "p1",
-      assignedDoctorId: "d2",
-      dateTime: "2024-03-25T11:00:00Z",
-      status: "Confirmed",
-      patientName: "Emma Martin",
-      doctorName: "Dr. Sophie"
-    }
-  ];
-};
+import { Plus, Search, Clock, ChevronRight, Calendar } from 'lucide-react';
+import { Appointment, AppointmentStatus } from '@/types';
+import { formatDate } from '@/lib/utils';
 
 const Appointments = () => {
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all'>('all');
-  const [doctorFilter, setDoctorFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<AppointmentStatus | 'All'>('All');
   
-  // Fetch appointments data
-  const { data: appointments = [], isLoading } = useQuery({
-    queryKey: ['appointments'],
-    queryFn: fetchAppointments
-  });
-  
-  // Check if user can add appointments (only MainDoctor and Assistant)
-  const canAddAppointments = user && (user.role === "MainDoctor" || user.role === "Assistant");
-  
-  // Filter appointments
+  // Mock appointment data - in a real app, this would come from Firestore
+  const [appointments] = useState<Appointment[]>([
+    {
+      id: '1',
+      patientId: 'p1',
+      patientName: 'Marie Dupont',
+      assignedDoctorId: 'd1',
+      doctorName: 'Dr. Martin',
+      dateTime: '2023-12-15T09:30:00',
+      status: 'Pending'
+    },
+    {
+      id: '2',
+      patientId: 'p2',
+      patientName: 'Thomas Bernard',
+      assignedDoctorId: 'd2',
+      doctorName: 'Dr. Petit',
+      dateTime: '2023-12-15T10:30:00',
+      status: 'Confirmed'
+    },
+    {
+      id: '3',
+      patientId: 'p3',
+      patientName: 'Sophie Dubois',
+      assignedDoctorId: 'd1',
+      doctorName: 'Dr. Martin',
+      dateTime: '2023-12-15T14:00:00',
+      status: 'Confirmed'
+    },
+    {
+      id: '4',
+      patientId: 'p4',
+      patientName: 'Lucas Morel',
+      assignedDoctorId: 'd3',
+      doctorName: 'Dr. Durand',
+      dateTime: '2023-12-14T11:30:00',
+      status: 'Done'
+    },
+    {
+      id: '5',
+      patientId: 'p5',
+      patientName: 'Emma Leroy',
+      assignedDoctorId: 'd2',
+      doctorName: 'Dr. Petit',
+      dateTime: '2023-12-14T16:00:00',
+      status: 'Canceled'
+    },
+    {
+      id: '6',
+      patientId: 'p1',
+      patientName: 'Marie Dupont',
+      assignedDoctorId: 'd1',
+      doctorName: 'Dr. Martin',
+      dateTime: '2023-12-20T09:30:00',
+      status: 'Confirmed'
+    }
+  ]);
+
+  // Filter appointments based on search term and active tab
   const filteredAppointments = appointments.filter(appointment => {
-    // Search filter
-    const searchMatches = 
-      appointment.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      appointment.doctorName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = 
+      appointment.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.doctorName?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Date filter
-    const dateMatches = selectedDate 
-      ? new Date(appointment.dateTime).toDateString() === selectedDate.toDateString()
-      : true;
+    const matchesTab = activeTab === 'All' || appointment.status === activeTab;
     
-    // Status filter
-    const statusMatches = statusFilter === 'all' || appointment.status === statusFilter;
-    
-    // Doctor filter
-    const doctorMatches = doctorFilter === 'all' || appointment.assignedDoctorId === doctorFilter;
-    
-    return searchMatches && dateMatches && statusMatches && doctorMatches;
+    return matchesSearch && matchesTab;
   });
-  
-  // Get unique doctor IDs for filter
-  const doctors = [
-    ...new Set(appointments.map(appointment => appointment.assignedDoctorId)),
-  ].map(id => ({
-    id,
-    name: appointments.find(a => a.assignedDoctorId === id)?.doctorName || id,
-  }));
-  
+
+  // Group appointments by date
+  const appointmentsByDate = filteredAppointments.reduce((acc, appointment) => {
+    const dateStr = formatDate(new Date(appointment.dateTime), 'yyyy-MM-dd');
+    if (!acc[dateStr]) {
+      acc[dateStr] = [];
+    }
+    acc[dateStr].push(appointment);
+    return acc;
+  }, {} as Record<string, Appointment[]>);
+
+  // Sort dates chronologically
+  const sortedDates = Object.keys(appointmentsByDate).sort();
+
+  // Check if user can add appointments (only MainDoctor and Assistant roles)
+  const canAddAppointments = user?.role === 'MainDoctor' || user?.role === 'Assistant';
+
   return (
     <DashboardLayout title="Rendez-vous">
-      <div className="mb-6 flex flex-col sm:flex-row justify-between gap-4">
-        <div className="flex gap-2">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'calendar')}>
-            <TabsList>
-              <TabsTrigger value="list">
-                <List className="h-4 w-4 mr-2" />
-                Liste
-              </TabsTrigger>
-              <TabsTrigger value="calendar">
-                <Calendar className="h-4 w-4 mr-2" />
-                Calendrier
-              </TabsTrigger>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <h1 className="text-3xl font-semibold">Rendez-vous</h1>
+        
+        <div className="flex gap-3">
+          <Button as={Link} to="/calendar" variant="outline">
+            <Calendar className="mr-2 h-4 w-4" />
+            Vue calendrier
+          </Button>
+          
+          {canAddAppointments && (
+            <Button as={Link} to="/appointments/new" className="shadow-md">
+              <Plus className="mr-2 h-4 w-4" />
+              Nouveau rendez-vous
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              className="pl-10"
+              placeholder="Rechercher un rendez-vous par patient ou docteur..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <Tabs defaultValue="All" onValueChange={(value) => setActiveTab(value as AppointmentStatus | 'All')}>
+            <TabsList className="grid grid-cols-5 mb-2">
+              <TabsTrigger value="All">Tous</TabsTrigger>
+              <TabsTrigger value="Pending">En attente</TabsTrigger>
+              <TabsTrigger value="Confirmed">Confirmés</TabsTrigger>
+              <TabsTrigger value="Done">Terminés</TabsTrigger>
+              <TabsTrigger value="Canceled">Annulés</TabsTrigger>
             </TabsList>
           </Tabs>
-        </div>
-        
-        {canAddAppointments && (
-          <Button asChild>
-            <Link to="/appointments/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouveau Rendez-vous
-            </Link>
-          </Button>
-        )}
-      </div>
-      
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Rechercher par patient ou docteur..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtres
+        </CardContent>
+      </Card>
+
+      {sortedDates.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 flex flex-col items-center justify-center text-center">
+            <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Aucun rendez-vous trouvé</h3>
+            <p className="text-muted-foreground mb-6">
+              Aucun rendez-vous ne correspond à votre recherche.
+            </p>
+            <Button onClick={() => {
+              setSearchTerm('');
+              setActiveTab('All');
+            }}>
+              Réinitialiser les filtres
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <Label>Date</Label>
-                <CalendarComponent
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="p-2 pointer-events-auto border rounded-md w-full"
-                />
-                {selectedDate && (
-                  <Button 
-                    variant="ghost" 
-                    className="text-xs h-auto py-1 px-2" 
-                    onClick={() => setSelectedDate(undefined)}
-                  >
-                    Effacer la date
-                  </Button>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Statut</Label>
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AppointmentStatus | 'all')}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tous les statuts" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="Pending">En attente</SelectItem>
-                    <SelectItem value="Confirmed">Confirmé</SelectItem>
-                    <SelectItem value="Canceled">Annulé</SelectItem>
-                    <SelectItem value="Done">Terminé</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Docteur</Label>
-                <Select value={doctorFilter} onValueChange={setDoctorFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tous les docteurs" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les docteurs</SelectItem>
-                    {doctors.map((doctor) => (
-                      <SelectItem key={doctor.id} value={doctor.id}>
-                        {doctor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-      
-      {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-24 bg-muted rounded-lg animate-pulse"></div>
-          ))}
-        </div>
-      ) : filteredAppointments.length > 0 ? (
-        <Tabs value={viewMode}>
-          <TabsContent value="list" className="mt-0">
-            <div className="space-y-4">
-              {filteredAppointments.map(appointment => (
-                <AppointmentCard key={appointment.id} appointment={appointment} />
-              ))}
-            </div>
-          </TabsContent>
-          <TabsContent value="calendar" className="mt-0">
-            <div className="bg-card rounded-lg p-6 text-center">
-              <p>La vue calendrier sera implémentée dans une prochaine version</p>
-              <p className="text-muted-foreground mt-2">Veuillez utiliser la vue liste pour le moment</p>
-            </div>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Aucun rendez-vous trouvé</p>
+        <div className="space-y-8">
+          {sortedDates.map((dateStr) => (
+            <div key={dateStr}>
+              <h2 className="text-xl font-medium mb-4">
+                {formatDate(new Date(dateStr), 'EEEE d MMMM yyyy')}
+              </h2>
+              
+              <div className="grid gap-4">
+                {appointmentsByDate[dateStr].map((appointment) => (
+                  <Link to={`/appointments/${appointment.id}`} key={appointment.id}>
+                    <Card className="transition-all hover:shadow-md hover:border-primary/20">
+                      <CardContent className="p-4 flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <Clock className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium">{appointment.patientName}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {formatDate(new Date(appointment.dateTime), 'HH:mm')} • {appointment.doctorName}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center">
+                          <span className={`mr-4 px-3 py-1 text-xs rounded-full ${
+                            appointment.status === 'Confirmed' 
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' 
+                              : appointment.status === 'Done' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                              : appointment.status === 'Canceled'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                          }`}>
+                            {appointment.status === 'Confirmed' ? 'Confirmé' : 
+                             appointment.status === 'Done' ? 'Terminé' : 
+                             appointment.status === 'Canceled' ? 'Annulé' : 'En attente'}
+                          </span>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </DashboardLayout>

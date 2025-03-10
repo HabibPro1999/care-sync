@@ -3,6 +3,7 @@ import React, { useState, ReactNode } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { user } = useAuth();
 
   // Toggle sidebar collapsed state
   const toggleSidebar = () => {
@@ -19,7 +21,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title }) =>
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      {/* Mobile sidebar */}
+      {/* Mobile sidebar overlay */}
       <div className={cn(
         "fixed inset-0 bg-background/80 backdrop-blur-sm z-30",
         sidebarCollapsed ? "hidden" : "md:hidden"
