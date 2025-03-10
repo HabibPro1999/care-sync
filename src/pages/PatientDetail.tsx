@@ -1,344 +1,322 @@
 
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { useAuth } from '@/context/AuthContext';
-import { Patient, Appointment, Note } from '@/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { formatDate } from '@/lib/utils';
-import { ArrowLeft, Edit, Calendar, Clock, User, Phone, FileText, Plus } from 'lucide-react';
+import { AppointmentCard } from '@/components/AppointmentCard';
+import { format } from 'date-fns';
+import { ChevronLeft, CalendarPlus, PencilLine, Phone, Mail, Calendar, FileText, Clipboard, Plus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+// Mock patient data
+const PATIENT = {
+  id: "123",
+  firstName: "Sophie",
+  lastName: "Martin",
+  dateOfBirth: new Date(1990, 4, 15),
+  gender: "female",
+  email: "sophie.martin@example.com",
+  phone: "+33 6 12 34 56 78",
+  address: "15 Rue des Lilas, 75020 Paris",
+  emergencyContact: "Jean Martin (Époux) - +33 6 98 76 54 32",
+  medicalHistory: "Allergie aux arachides",
+  createdAt: new Date(2022, 2, 10)
+};
+
+// Mock appointments data
+const APPOINTMENTS = [
+  {
+    id: "1",
+    patientName: "Sophie Martin",
+    patientId: "123",
+    doctorName: "Dr. Dubois",
+    doctorId: "d1",
+    date: new Date(2023, 6, 15, 10, 30),
+    status: "Confirmed"
+  },
+  {
+    id: "2",
+    patientName: "Sophie Martin",
+    patientId: "123",
+    doctorName: "Dr. Petit",
+    doctorId: "d2",
+    date: new Date(2023, 5, 20, 14, 0),
+    status: "Done"
+  },
+  {
+    id: "3",
+    patientName: "Sophie Martin",
+    patientId: "123",
+    doctorName: "Dr. Dubois",
+    doctorId: "d1",
+    date: new Date(2023, 4, 5, 9, 0),
+    status: "Done"
+  }
+];
+
+// Mock medical notes
+const MEDICAL_NOTES = [
+  {
+    id: "1",
+    date: new Date(2023, 5, 20, 14, 30),
+    doctorName: "Dr. Petit",
+    note: "La patiente se plaint de maux de tête fréquents. Prescription d'analgésiques et recommandation de suivi dans 2 semaines.",
+  },
+  {
+    id: "2",
+    date: new Date(2023, 4, 5, 9, 30),
+    doctorName: "Dr. Dubois",
+    note: "Examen de routine. Tous les indicateurs sont normaux. Rappel sur l'importance de l'activité physique régulière.",
+  }
+];
 
 const PatientDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const [newNote, setNewNote] = useState('');
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const { toast } = useToast();
   
-  // States for patient data and related information
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Check if user can edit patients (only MainDoctor and Assistant roles)
-  const canEditPatient = user?.role === 'MainDoctor' || user?.role === 'Assistant';
+  // In a real app, we would fetch patient data based on the ID
+  const patient = PATIENT;
+  const patientAppointments = APPOINTMENTS;
+  const medicalNotes = MEDICAL_NOTES;
   
-  // Check if user can add appointments (only MainDoctor and Assistant roles)
-  const canAddAppointment = user?.role === 'MainDoctor' || user?.role === 'Assistant';
-
-  useEffect(() => {
-    // In a real app, you'd fetch this data from Firebase
-    // For now, we'll use mock data
-    setTimeout(() => {
-      setPatient({
-        id: id || '1',
-        fullName: 'Marie Dupont',
-        parentName: 'Pierre Dupont',
-        parentPhone: '+33123456789',
-        illness: 'Asthme',
-        additionalNotes: 'Allergique aux arachides. Prend régulièrement des médicaments pour l\'asthme. Doit éviter l\'exercice intense par temps froid. Antécédents familiaux d\'asthme et d\'allergies.',
-        createdAt: '2023-05-10'
+  const handleAddNote = () => {
+    if (!newNote.trim()) {
+      toast({
+        title: "Note vide",
+        description: "Veuillez saisir une note avant de l'ajouter",
+        variant: "destructive",
       });
-
-      setAppointments([
-        {
-          id: 'a1',
-          patientId: id || '1',
-          assignedDoctorId: 'doc1',
-          dateTime: '2023-09-15T10:30:00',
-          status: 'Done',
-          patientName: 'Marie Dupont',
-          doctorName: 'Dr. Martin'
-        },
-        {
-          id: 'a2',
-          patientId: id || '1',
-          assignedDoctorId: 'doc2',
-          dateTime: '2023-10-20T14:00:00',
-          status: 'Done',
-          patientName: 'Marie Dupont',
-          doctorName: 'Dr. Bernard'
-        },
-        {
-          id: 'a3',
-          patientId: id || '1',
-          assignedDoctorId: 'doc1',
-          dateTime: '2023-12-05T09:15:00',
-          status: 'Confirmed',
-          patientName: 'Marie Dupont',
-          doctorName: 'Dr. Martin'
-        }
-      ]);
-
-      setNotes([
-        {
-          id: 'n1',
-          text: 'Le patient présente des symptômes légers. Prescription de ventoline à prendre en cas de crise.',
-          dateTimeCreated: '2023-09-15T11:00:00',
-          createdBy: 'doc1',
-          createdByName: 'Dr. Martin'
-        },
-        {
-          id: 'n2',
-          text: 'Amélioration notable des symptômes. Continuer le traitement actuel et revoir dans un mois.',
-          dateTimeCreated: '2023-10-20T14:30:00',
-          createdBy: 'doc2',
-          createdByName: 'Dr. Bernard'
-        },
-        {
-          id: 'n3',
-          voiceMemoTranscription: 'Patient très coopératif, l\'asthme semble bien contrôlé. Parents satisfaits des progrès.',
-          text: '',
-          dateTimeCreated: '2023-10-20T14:35:00',
-          createdBy: 'doc2',
-          createdByName: 'Dr. Bernard'
-        }
-      ]);
-
-      setLoading(false);
-    }, 800);
-  }, [id]);
-
-  if (loading) {
-    return (
-      <DashboardLayout title="Détails du patient">
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-pulse text-primary">Chargement...</div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!patient) {
-    return (
-      <DashboardLayout title="Détails du patient">
-        <div className="flex flex-col items-center justify-center h-full">
-          <h2 className="text-xl font-semibold mb-2">Patient non trouvé</h2>
-          <p className="text-muted-foreground mb-4">Le patient que vous recherchez n'existe pas ou a été supprimé.</p>
-          <Button as={Link} to="/patients">Retour à la liste des patients</Button>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
+      return;
+    }
+    
+    // In a real app, we would send this to an API
+    toast({
+      title: "Note ajoutée",
+      description: "La note médicale a été ajoutée avec succès",
+    });
+    
+    setNewNote('');
+    setIsAddingNote(false);
+  };
+  
   return (
     <DashboardLayout title="Détails du patient">
-      <div className="mb-6">
-        <Button variant="ghost" className="mb-4" onClick={() => navigate('/patients')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour aux patients
+      <div className="space-y-6">
+        {/* Back button */}
+        <Button variant="outline">
+          <Link to="/patients">
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Retour aux patients
+          </Link>
         </Button>
         
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-3xl font-semibold">{patient.fullName}</h1>
-          
-          <div className="flex gap-3">
-            {canEditPatient && (
-              <Button as={Link} to={`/patients/${patient.id}/edit`} variant="outline">
-                <Edit className="mr-2 h-4 w-4" />
-                Modifier
+        {/* Patient info card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <CardTitle className="text-2xl">
+                {patient.firstName} {patient.lastName}
+              </CardTitle>
+              <CardDescription>
+                Patient depuis {format(patient.createdAt, 'MMMM yyyy')} • ID: {patient.id}
+              </CardDescription>
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="outline">
+                <Link to={`/patients/${patient.id}/edit`}>
+                  <PencilLine className="mr-2 h-4 w-4" />
+                  Modifier
+                </Link>
               </Button>
-            )}
-            
-            {canAddAppointment && (
-              <Button as={Link} to={`/appointments/new?patientId=${patient.id}`}>
-                <Calendar className="mr-2 h-4 w-4" />
-                Nouveau rendez-vous
+              
+              <Button>
+                <Link to={`/appointments/new?patientId=${patient.id}`}>
+                  <CalendarPlus className="mr-2 h-4 w-4" />
+                  Nouveau rendez-vous
+                </Link>
               </Button>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Informations patient</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Nom complet</h3>
-              <p className="flex items-center">
-                <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                {patient.fullName}
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Nom du parent</h3>
-              <p className="flex items-center">
-                <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                {patient.parentName}
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Téléphone du parent</h3>
-              <p className="flex items-center">
-                <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-                {patient.parentPhone}
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Maladie</h3>
-              <p className="flex items-center">
-                <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
-                {patient.illness}
-              </p>
-            </div>
-            
-            {patient.additionalNotes && (
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Notes additionnelles</h3>
-                <p className="text-sm">{patient.additionalNotes}</p>
+                <dl className="space-y-4">
+                  <div>
+                    <dt className="text-sm font-medium text-muted-foreground">Date de naissance</dt>
+                    <dd>{format(patient.dateOfBirth, 'dd/MM/yyyy')} ({new Date().getFullYear() - patient.dateOfBirth.getFullYear()} ans)</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-muted-foreground">Genre</dt>
+                    <dd>{patient.gender === 'female' ? 'Femme' : 'Homme'}</dd>
+                  </div>
+                  <div className="flex items-center">
+                    <dt className="text-sm font-medium text-muted-foreground mr-2">Téléphone</dt>
+                    <dd className="flex items-center">
+                      <Phone className="h-4 w-4 mr-1 text-muted-foreground" />
+                      {patient.phone}
+                    </dd>
+                  </div>
+                  <div className="flex items-center">
+                    <dt className="text-sm font-medium text-muted-foreground mr-2">Email</dt>
+                    <dd className="flex items-center">
+                      <Mail className="h-4 w-4 mr-1 text-muted-foreground" />
+                      {patient.email}
+                    </dd>
+                  </div>
+                </dl>
               </div>
-            )}
-            
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-1">Date d'ajout</h3>
-              <p className="flex items-center">
-                <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                {formatDate(new Date(patient.createdAt), 'dd MMMM yyyy')}
-              </p>
+              <div>
+                <dl className="space-y-4">
+                  <div>
+                    <dt className="text-sm font-medium text-muted-foreground">Adresse</dt>
+                    <dd>{patient.address}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-muted-foreground">Contact d'urgence</dt>
+                    <dd>{patient.emergencyContact}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-muted-foreground">Historique médical</dt>
+                    <dd>{patient.medicalHistory || "Aucun historique médical enregistré"}</dd>
+                  </div>
+                </dl>
+              </div>
             </div>
           </CardContent>
         </Card>
         
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="appointments">
-            <TabsList className="mb-4">
-              <TabsTrigger value="appointments">Rendez-vous</TabsTrigger>
-              <TabsTrigger value="notes">Notes médicales</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="appointments">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle>Historique des rendez-vous</CardTitle>
-                  <CardDescription>
-                    {appointments.length > 0 
-                      ? `${appointments.length} rendez-vous enregistrés`
-                      : 'Aucun rendez-vous enregistré'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {appointments.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Aucun rendez-vous</h3>
-                      <p className="text-muted-foreground mb-6">
-                        Ce patient n'a pas encore de rendez-vous enregistré.
-                      </p>
-                      {canAddAppointment && (
-                        <Button as={Link} to={`/appointments/new?patientId=${patient.id}`}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Planifier un rendez-vous
-                        </Button>
-                      )}
-                    </div>
+        {/* Tabs for appointments and notes */}
+        <Tabs defaultValue="appointments">
+          <TabsList>
+            <TabsTrigger value="appointments" className="flex items-center">
+              <Calendar className="h-4 w-4 mr-2" />
+              Rendez-vous
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="flex items-center">
+              <FileText className="h-4 w-4 mr-2" />
+              Notes médicales
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center">
+              <Clipboard className="h-4 w-4 mr-2" />
+              Documents
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="appointments">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Historique des rendez-vous</CardTitle>
+                    <CardDescription>{patientAppointments.length} rendez-vous au total</CardDescription>
+                  </div>
+                  <Button>
+                    <Link to={`/appointments/new?patientId=${patient.id}`}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nouveau
+                    </Link>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {patientAppointments.length > 0 ? (
+                    patientAppointments.map(appointment => (
+                      <AppointmentCard
+                        key={appointment.id}
+                        appointment={appointment}
+                        href={`/appointments/${appointment.id}`}
+                        showPatient={false}
+                      />
+                    ))
                   ) : (
-                    <div className="space-y-4">
-                      {appointments.map((appointment) => (
-                        <Link 
-                          key={appointment.id} 
-                          to={`/appointments/${appointment.id}`}
-                          className="block"
-                        >
-                          <div className="flex flex-col sm:flex-row justify-between p-4 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
-                            <div className="flex items-center gap-4 mb-2 sm:mb-0">
-                              <div className="bg-primary/10 h-10 w-10 rounded-full flex items-center justify-center">
-                                <Clock className="h-5 w-5 text-primary" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium">{formatDate(new Date(appointment.dateTime), 'EEEE d MMMM yyyy')}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatDate(new Date(appointment.dateTime), 'HH:mm')} • {appointment.doctorName}
-                                </p>
-                              </div>
-                            </div>
-                            <div>
-                              <span className={`px-3 py-1 text-xs rounded-full ${
-                                appointment.status === 'Confirmed' 
-                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' 
-                                  : appointment.status === 'Done' 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                                  : appointment.status === 'Canceled'
-                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                              }`}>
-                                {appointment.status === 'Confirmed' ? 'Confirmé' : 
-                                appointment.status === 'Done' ? 'Terminé' : 
-                                appointment.status === 'Canceled' ? 'Annulé' : 'En attente'}
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                      ))}
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Aucun rendez-vous enregistré</p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="notes">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle>Notes médicales</CardTitle>
-                  <CardDescription>
-                    {notes.length > 0 
-                      ? `${notes.length} notes enregistrées`
-                      : 'Aucune note enregistrée'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {notes.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Aucune note</h3>
-                      <p className="text-muted-foreground">
-                        Aucune note médicale n'a été ajoutée pour ce patient.
-                      </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="notes">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Notes médicales</CardTitle>
+                    <CardDescription>Historique des consultations</CardDescription>
+                  </div>
+                  <Button onClick={() => setIsAddingNote(!isAddingNote)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter une note
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isAddingNote && (
+                  <div className="mb-6 p-4 border rounded-md">
+                    <label className="block text-sm font-medium mb-2">Nouvelle note médicale</label>
+                    <textarea 
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Saisir une nouvelle note médicale..."
+                      className="w-full p-2 border rounded-md mb-2 min-h-[100px]"
+                    ></textarea>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setIsAddingNote(false)}>Annuler</Button>
+                      <Button onClick={handleAddNote}>Enregistrer</Button>
                     </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {notes.map((note) => (
-                        <div key={note.id} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                <User className="h-4 w-4 text-primary" />
-                              </div>
-                              <span className="font-medium">{note.createdByName}</span>
-                            </div>
-                            <span className="text-sm text-muted-foreground">
-                              {formatDate(new Date(note.dateTimeCreated), 'dd MMM yyyy')} à {formatDate(new Date(note.dateTimeCreated), 'HH:mm')}
-                            </span>
-                          </div>
-                          
-                          <Separator className="my-3" />
-                          
-                          {note.text && (
-                            <p className="text-sm leading-relaxed whitespace-pre-line">{note.text}</p>
-                          )}
-                          
-                          {note.voiceMemoTranscription && (
-                            <div className="mt-2 bg-secondary/50 p-3 rounded-md">
-                              <p className="text-sm text-muted-foreground mb-1">Transcription audio:</p>
-                              <p className="text-sm italic">{note.voiceMemoTranscription}</p>
-                            </div>
-                          )}
+                  </div>
+                )}
+                
+                <div className="space-y-4">
+                  {medicalNotes.length > 0 ? (
+                    medicalNotes.map(note => (
+                      <div key={note.id} className="border p-4 rounded-md">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="font-medium">{format(note.date, 'dd/MM/yyyy HH:mm')}</div>
+                          <div className="text-sm text-muted-foreground">{note.doctorName}</div>
                         </div>
-                      ))}
+                        <p className="text-sm">{note.note}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Aucune note médicale enregistrée</p>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="documents">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Documents</CardTitle>
+                    <CardDescription>Ordonnances et documents médicaux</CardDescription>
+                  </div>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter un document
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Aucun document disponible</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
